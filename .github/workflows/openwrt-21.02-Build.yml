@@ -33,7 +33,7 @@ jobs:
 
     name: Build ${{ matrix.arch }} firmware
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -81,8 +81,6 @@ jobs:
           echo "luci-app-openclash" >> .git/info/sparse-checkout
           git pull --depth 1 origin master
           git branch --set-upstream-to=origin/master master
-          cd ..
-          cd ..
           pwd
           cd immortalwrt
           pwd         
