@@ -1,0 +1,162 @@
+#
+# This is free software, lisence use MIT.
+# 
+# Copyright (C) 2019 P3TERX <https://p3terx.com>
+# Copyright (C) 2020 KFERMercer <KFER.Mercer@gmail.com>
+# 
+# <https://github.com/KFERMercer/OpenWrt-CI>
+#
+
+name: ImmortalWrt 21.02 CI
+
+on:
+  #push:
+  #  branches: 
+  #    - main
+  #  paths: 
+  #    - 'makeconfig.d/21.02/**'
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
+        required: false
+        default: 'no'   
+        
+  #schedule: 
+  #  - cron: 7 15 * * 5
+  release:
+    types: [published]
+
+jobs:
+
+  build_openwrt:
+
+    name: Build ${{ matrix.arch }} firmware
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [r1plus]
+
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: main
+
+      - name: Space cleanup
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          docker rmi `docker images -q`
+          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /opt/az
+          sudo -E apt-get -y purge ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* adoptopenjdk* mysql* php* mongodb* dotnet* moby* snapd* || true
+          #sudo -E apt-get -y purge mysql*
+          sudo -E apt-get update
+          sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler antlr3 gperf swig libtinfo5
+          sudo -E apt-get -y autoremove --purge
+          sudo -E apt-get clean
+          df -h
+
+      - name: clone sources code
+        run: |
+          git clone https://github.com/hululu1068/OpenWRT-v21.02.3 -b v21.02.3 immortalwrt
+          cd immortalwrt
+
+      - name: Update feeds
+        run: |
+          pwd
+          cd immortalwrt
+          pwd
+          # OpenClash
+          mkdir package/luci-app-openclash
+          cd package/luci-app-openclash
+          git init
+          git remote add -f origin https://github.com/vernesong/OpenClash.git
+          git config core.sparsecheckout true
+          echo "luci-app-openclash" >> .git/info/sparse-checkout
+          git pull --depth 1 origin master
+          git branch --set-upstream-to=origin/master master
+          cd ..
+          pwd
+          cd immortalwrt
+          pwd         
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Generate configuration file
+        run: |
+          cd immortalwrt
+          #sed -i 's/192.168.1.1/192.168.30.1/g' ./package/base-files/files/bin/config_generate
+          rm -f ./.config*
+          cp ../configs/${{ matrix.arch }}.config ./.config
+          sed -i 's/^[ \t]*//g' ./.config
+          make defconfig
+
+      - name: Make download
+        run: |
+          cd immortalwrt
+          make download -j8 || make download -j1 V=s
+          rm -rf $(find ./dl/ -size -1024c)
+          #df -h
+
+      - name: Compile firmware
+        run: |
+          cd immortalwrt
+          echo "$(nproc) CPU work!"
+          make -j$(nproc) || make -j1 V=s
+          echo "======================="
+          echo "Space usage:"
+          echo "======================="
+          df -h
+          echo "======================="
+          du -h ./ --max-depth=1
+          #du -h /mnt/openwrt/ --max-depth=1 || true
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p ./artifact/firmware
+          mkdir -p ./artifact/package
+          mkdir -p ./artifact/buildinfo
+          mkdir -p ./artifact/firmware1
+          mkdir -p ./artifact/firmware2
+          rm -rf $(find ./immortalwrt/bin/targets/ -type d -name "packages")
+          cp -rf $(find ./immortalwrt/bin/targets/ -type f) ./artifact/firmware/
+          cp -rf $(find ./immortalwrt/bin/packages/ -type f -name "*.ipk") ./artifact/package/
+          cp -rf $(find ./immortalwrt/bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+          #cp ./immortalwrt/bin/targets/x86/64/immortalwrt-x86-64-generic-squashfs-combined.img.gz ./artifact/firmware1
+          #cp ./immortalwrt/bin/targets/x86/64/immortalwrt-x86-64-generic-squashfs-combined-efi.img.gz ./artifact/firmware2
+
+      - name: Deliver buildinfo
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.arch }}_OpenWrt_buildinfo
+          path: ./artifact/buildinfo/
+          retention-days: 10
+
+      - name: Deliver package
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.arch }}_OpenWrt_package
+          path: ./artifact/package/
+          retention-days: 10
+
+      - name: Deliver firmware
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.arch }}_OpenWrt_firmware
+          path: ./immortalwrt/bin/targets/
+          retention-days: 10
+
+      - name: Upload release asset
+        if: github.event == 'release'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.YOURTOKEN }}
+          file: ./artifact/firmware/*
+          tag: ${{ github.ref }}
+          file_glob: true
