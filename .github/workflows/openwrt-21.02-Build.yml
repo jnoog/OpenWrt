@@ -64,7 +64,7 @@ jobs:
 
       - name: clone sources code
         run: |
-          git clone https://github.com/hululu1068/OpenWRT-v21.02.3 -b v21.02.3 immortalwrt
+          git clone https://github.com/baiywt/openwrt -b openwrt-22.03 immortalwrt
           cd immortalwrt
 
       - name: Update feeds
@@ -138,12 +138,12 @@ jobs:
           path: ./artifact/buildinfo/
           retention-days: 10
 
-      - name: Deliver package
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.arch }}_OpenWrt_package
-          path: ./artifact/package/
-          retention-days: 10
+      #- name: Deliver package
+      #  uses: actions/upload-artifact@v2
+      #  with:
+      #    name: ${{ matrix.arch }}_OpenWrt_package
+      #    path: ./artifact/package/
+      #    retention-days: 10
 
       - name: Deliver firmware
         uses: actions/upload-artifact@v2
