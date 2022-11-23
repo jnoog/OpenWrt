@@ -51,7 +51,7 @@ jobs:
 
       - name: clone sources code
         run: |
-          git clone https://github.com/baiywt/openwrt -b openwrt-22.03 immortalwrt
+          git clone https://github.com/orangepi-xunlong/openwrt -b openwrt-21.02 immortalwrt
           cd immortalwrt
 
       - name: Update feeds
