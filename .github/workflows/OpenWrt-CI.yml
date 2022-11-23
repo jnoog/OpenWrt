@@ -11,12 +11,7 @@ name: OpenWrt Build
 
 on:
 
-  workflow_dispatch:
-  #  inputs:
-  #    debug_enabled:
-  #      description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
-  #      required: false
-  #      default: 'no'   
+  workflow_dispatch:  
 
   #schedule: 
   #  - cron: 7 15 * * 5
@@ -27,13 +22,9 @@ jobs:
 
   build_openwrt:
 
-    name: Build ${{ matrix.arch }} firmware
+    name: Build OpenWrt firmware
 
     runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [r1plus]
 
     if: github.event.repository.owner.id == github.event.sender.id
 
@@ -89,7 +80,7 @@ jobs:
           cd immortalwrt
           #sed -i 's/192.168.1.1/192.168.30.1/g' ./package/base-files/files/bin/config_generate
           rm -f ./.config*
-          cp ../configs/${{ matrix.arch }}.config ./.config
+          cp ../configs/r1plus.config ./.config
           sed -i 's/^[ \t]*//g' ./.config
           make defconfig
 
@@ -130,21 +121,21 @@ jobs:
       - name: Deliver buildinfo
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.arch }}_OpenWrt_buildinfo
+          name: OpenWrt_buildinfo
           path: ./artifact/buildinfo/
           retention-days: 10
 
       #- name: Deliver package
       #  uses: actions/upload-artifact@v2
       #  with:
-      #    name: ${{ matrix.arch }}_OpenWrt_package
+      #    name: OpenWrt_package
       #    path: ./artifact/package/
       #    retention-days: 10
 
       - name: Deliver firmware
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.arch }}_OpenWrt_firmware
+          name: OpenWrt_firmware
           path: ./immortalwrt/bin/targets/
           retention-days: 10
 
