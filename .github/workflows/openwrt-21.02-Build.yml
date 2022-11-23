@@ -10,27 +10,18 @@
 name: OpenWrt Build
 
 on:
-  #push:
-  #  branches: 
-  #    - main
-  #  paths: 
-  #    - 'makeconfig.d/21.02/**'
-  #workflow_dispatch:
+
+  workflow_dispatch:
   #  inputs:
   #    debug_enabled:
   #      description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
   #      required: false
   #      default: 'no'   
-  repository_dispatch:
-  workflow_dispatch:
-  push:
-    branches: [main]
-  #pull_request:
-  #  branches: [main]
+
   #schedule: 
   #  - cron: 7 15 * * 5
-  #release:
-  #  types: [published]
+  release:
+    types: [published]
 
 jobs:
 
