@@ -109,8 +109,8 @@ jobs:
           mkdir -p ./artifact/firmware
           mkdir -p ./artifact/package
           mkdir -p ./artifact/buildinfo
-          mkdir -p ./artifact/firmware1
-          mkdir -p ./artifact/firmware2
+          #mkdir -p ./artifact/firmware1
+          #mkdir -p ./artifact/firmware2
           rm -rf $(find ./immortalwrt/bin/targets/ -type d -name "packages")
           cp -rf $(find ./immortalwrt/bin/targets/ -type f) ./artifact/firmware/
           cp -rf $(find ./immortalwrt/bin/packages/ -type f -name "*.ipk") ./artifact/package/
